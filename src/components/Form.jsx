@@ -1,48 +1,132 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import '../form.css'
+
+
+import { BsFillPeopleFill, BsFillShieldFill, BsLockFill } from 'react-icons/bs'
+import { MdAlternateEmail } from 'react-icons/md'
+
 import StyleContextProvider from '../context/Style'
-import {BsFillTelephoneFill, BsFillShieldFill} from 'react-icons/bs'
+import UserContextProvider from '../context/UserContext'
+
 
 
 
 function Form() {
-    const { check, setCheck } = StyleContextProvider();
+    const { user, setUser, submitCredentials, loginUser, getOTP, resetValues } = UserContextProvider();
+    const { check } = StyleContextProvider();
+    const [confirmPass, setConfirmPass] = useState("");
+    const [country, setCountry] = useState("+92");
+
+    const clear = () => {
+        setConfirmPass("");
+        setCountry("+92");
+    }
+
+    const loginButtonRef = useRef();
+    const signupButtonRef = useRef();
+    const forgetButtonRef = useRef();
+
+
+    //! handling input fields
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        console.log(name)
+        console.log(value)
+        if (name === "confirmPassword") {
+            setConfirmPass(value)
+        } else if (name === "country") {
+            setCountry(value)
+            setUser(prevValue => {
+                return {...prevValue, phone: ""}
+            })
+        }
+        setUser(prevValue => {
+            return { ...prevValue, [name]: value }
+        })
+    }
+
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        // console.log(event.nativeEvent.submitter.name)
+        // console.log(user)
+        const action = event.nativeEvent.submitter.name
+
+        if (action === "signup") {
+            if (user.password === confirmPass) {
+                submitCredentials(user, country)
+                resetValues()
+                clear()
+            } else {
+                alert("Passwords do not match")
+            }
+        } else if (action === "forgetPass") {
+            getOTP();
+        } 
+        else {
+            loginUser(user)
+            resetValues()
+            clear()
+        }
+    }
+    
     return (
         <div className=''>
 
-            <form className="form ">
-                <p id="heading">{check ? "Login" : "Sign Up"}</p>
+            {/* <form onSubmit={(event)=> {event.preventDefault(); handleSubmit(event);}} className="form "> */}
+            <form className="form" onSubmit={(event) => {handleSubmit(event)}}>
+                <p className=' font-bold tracking-widest ' id="heading">{check ? "Login" : "Sign Up"}</p>
+                {/* //! Inputs // */}
                 <div className="field">
-                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"></path>
-                    </svg>
-                    <input autoComplete="off" placeholder="Email" className="input-field" type="text" />
+                    <MdAlternateEmail size={19} />
+                    <input autoComplete="off" placeholder="Email" className="input-field" type="email" name='email' value={user.email} onChange={handleChange} required />
                 </div>
                 <div className="field">
-                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
-                    </svg>
-                    <input placeholder="Password" className="input-field" type="password" />
+                    <BsLockFill size={19} />
+                    <input minLength={6} placeholder="Password" className="input-field" type="password" name='password' value={user.password} onChange={handleChange} required />
                 </div>
                 {!check && (<>
                     <div className="field">
-                        <BsFillShieldFill size={19}/>
-                        <input placeholder="Confirm Password" className="input-field" type="password" />
+                        <BsFillShieldFill size={19} />
+                        <input minLength={6} placeholder="Confirm Password" className="input-field" name='confirmPassword' value={confirmPass} type="password" onChange={handleChange} required />
                     </div>
                     <div className="field">
-                        <BsFillTelephoneFill size={19}/>
-                        <input placeholder="Phone Number" className="input-field" type="text" />
+                        <BsFillPeopleFill size={20}/>
+                        <select name="type"value={user.type} onChange={handleChange}  className='w-full  text-[#6B7280] rounded-sm' required>
+                            <option value='' className='font-semibold'>Select</option>
+                            <option value="seller">Seller</option>
+                            <option value="buyer">Buyer</option>
+                        </select>
                     </div>
+                    <div className="field">
+                        {/* <BsFillTelephoneFill size={19}/> */}
+                        <select className=' text-gray-600 rounded-sm' name="country" value={country} onChange={handleChange}>
+                            <option value="+92">🇵🇰 (+92)</option>
+                            <option value="+1">🇺🇸 (+1)</option>
+                            <option value="+44">🇬🇧 (+44)</option>
+                            <option value="+81">🇯🇵 (+81)</option>
+                            {/* Add more countries as needed */}
+                        </select>
+                        <input placeholder="Phone Number" className="input-field" name="phone" value={user.phone} pattern="\d{10}" type="text" onChange={handleChange} required />
+                    </div>
+
                 </>
                 )}
 
                 <div className='btn-section'>
-                    <div className="btn">
-                        <button className="button1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{check ? "Login" : "Sign Up"}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
-                    </div>
+                    {/* //! Login button */}
+                    {check && <div className="btn">
+                        <button  name="login" type='submit' className="button1">Login</button>
+                    </div>}
+                    {/* //! SignUp button */}
+                    {!check && <div className="btn">
+                        <button  name="signup" type='submit' className="button1">Sign Up</button>
+                    </div>}
                     <div className='btn'>
-                        {check && (<button className="button3">Forgot Password</button>)}
+                        {check && (<button  name='forgetPass' type='submit' className="button3">Forgot Password</button>)}
                     </div>
+
                 </div>
             </form>
         </div>
